@@ -8,8 +8,13 @@ let durationsDict = {};
 const inputYear = document.getElementById('year');
 const inputMonth = document.getElementById('month');
 const inputDate = document.getElementById('date');
+const inputDistance=document.getElementById('distance');
+const inputDuration=document.getElementById('duration');
 
-const screenshotButton=document.getElementById('screenshot-btn');
+
+const screenshotButton = document.getElementById('screenshot-btn');
+
+const submitButton=document.getElementById('submit-button');
 
 const monthDatesText = document.getElementById('month-dates-text');
 const monthBtnPrev = document.getElementById('month-button-prev');
@@ -19,31 +24,35 @@ const sliderHandle = document.getElementById('slider-handle');
 const sliderContainer = document.getElementById('slider-container');
 const sliderDateTexts = document.querySelectorAll('.slider-date-text');
 
-const currentDateText=document.getElementById('current-date-text');
+const currentDateText = document.getElementById('current-date-text');
 
-const currentDateDistText=document.getElementById('current-date-dist-text');
+const currentDateDistText = document.getElementById('current-date-dist-text');
 
 const barChart = document.getElementById('bar-chart');
-const currentDateLine=document.getElementById('current-date-line');
+const currentDateLine = document.getElementById('current-date-line');
 
-const totalDistText=document.getElementById('total-dist');
-const runCountText=document.getElementById('run-counts');
-const totalMinutesText=document.getElementById('total-minutes');
-const totalCalsText=document.getElementById('total-cals');
-const totalStepsText=document.getElementById('total-steps');
-const avgPaceText=document.getElementById('avg-pace');
+const totalDistText = document.getElementById('total-dist');
+const runCountText = document.getElementById('run-counts');
+const totalMinutesText = document.getElementById('total-minutes');
+const totalCalsText = document.getElementById('total-cals');
+const totalStepsText = document.getElementById('total-steps');
+const avgPaceText = document.getElementById('avg-pace');
 
 
 let daysInMonth;
-let currentDate=1;
-let currentMonth=1;
-let currentYear=2024;
+let currentDate = 1;
+let currentMonth = 1;
+let currentYear = 2024;
 
 let isDragging = false;
 let offsetX = 0;
 
 
-let highlightBarKey=-1;
+let highlightBarKey = -1;
+
+let maxDistScale=6;
+
+let scalesTexts=[];
 
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -53,7 +62,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     inputYear.addEventListener('change', function () { populateDateOptions(); updateYearMonthDate(); });
     inputMonth.addEventListener('change', function () { populateDateOptions(); updateYearMonthDate(); });
-    inputDate.addEventListener('change', function() {
+    inputDate.addEventListener('change', function () {
         currentDate = parseInt(inputDate.value);
         updateCurrentDateText();
         updateDateSlider();
@@ -73,10 +82,10 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    monthBtnPrev.addEventListener('click',reduceMonthValue);
-    monthBtnNext.addEventListener('click',increaseMonthValue);
-    
-   
+    monthBtnPrev.addEventListener('click', reduceMonthValue);
+    monthBtnNext.addEventListener('click', increaseMonthValue);
+
+
     updateYearMonthDate();
     updateCurrentDateText();
     updateCurrentDateDist();
@@ -85,29 +94,38 @@ document.addEventListener('DOMContentLoaded', function () {
 
     let left = parseFloat(sliderHandle.style.left);
     console.log(`slider handle left: ${left}`)
+    let halfWidth = parseFloat(sliderHandle.style.width) * 0.5;
 
-    moveSliderDateTexts(left);
+    moveSliderDateTexts(left + halfWidth);
+
+    scalesTexts.push(document.getElementById("scale-0"))
+    scalesTexts.push(document.getElementById("scale-1"))
+    scalesTexts.push(document.getElementById("scale-2"))
+    scalesTexts.push(document.getElementById("scale-3"))
+    scalesTexts.push(document.getElementById("scale-4"))
+
+
 
 });
 
-function reduceMonthValue(){
+function reduceMonthValue() {
 
     console.log("clicked negative")
-    if(inputMonth.value>1){
+    if (inputMonth.value > 1) {
         inputMonth.value = parseInt(inputMonth.value) - 1;
         inputMonth.dispatchEvent(new Event('change'));
     }
-    
+
 }
 
-function increaseMonthValue(){
+function increaseMonthValue() {
 
     console.log("clicked positive")
-    if(inputMonth.value<12){
+    if (inputMonth.value < 12) {
         inputMonth.value = parseInt(inputMonth.value) + 1;
         inputMonth.dispatchEvent(new Event('change'));
     }
-    
+
 }
 
 function populateYearOptions() {
@@ -146,20 +164,20 @@ function populateDateOptions() {
         option.textContent = date;
         inputDate.appendChild(option);
     }
-    if(currentDate>daysInMonth){
-        currentDate=daysInMonth
+    if (currentDate > daysInMonth) {
+        currentDate = daysInMonth
     }
 
-    inputDate.value=currentDate;
+    inputDate.value = currentDate;
 }
 
 function handleFormSubmit(event) {
     event.preventDefault();
 
-    const duration = parseFloat(document.getElementById('duration').value);
+    const duration = parseFloat(inputDuration.value);
 
-    const distance = parseFloat(document.getElementById('distance').value);
-    
+    const distance = parseFloat(inputDistance.value);
+
     addRunData(currentDate, distance, duration);
 }
 
@@ -167,29 +185,29 @@ function handleFormSubmit(event) {
 function updateYearMonthDate() {
     currentYear = parseInt(inputYear.value);
     currentMonth = parseInt(inputMonth.value);
-    currentDate=parseInt(inputDate.value);
+    currentDate = parseInt(inputDate.value);
 
     console.log(`current date: ${inputDate.value}`);
 
     const startDate = `${currentYear}年${currentMonth}月1日`;
 
-    daysInMonth=new Date(currentYear, currentMonth, 0).getDate();
+    daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
     const endDate = `${currentYear}年${currentMonth}月${daysInMonth}日`;
 
     monthDatesText.textContent = `${startDate} 至 ${endDate}`;
 
     for (let i = 0; i < sliderDateTexts.length; i++) {
-        
-        text=sliderDateTexts[i];
-        let t=i/(sliderDateTexts.length-1);
-        const day=Math.floor((daysInMonth-1)*t)+1;
-        text.textContent=`${currentMonth}月${day}日`;
 
-      }
+        text = sliderDateTexts[i];
+        let t = i / (sliderDateTexts.length - 1);
+        const day = Math.floor((daysInMonth - 1) * t) + 1;
+        text.textContent = `${currentMonth}月${day}日`;
 
-    currentDateText.textContent=`${currentMonth}月${currentDate}日`;
-    
-    
+    }
+
+    currentDateText.textContent = `${currentMonth}月${currentDate}日`;
+
+
 }
 
 
@@ -215,13 +233,19 @@ function setScreenSize(size) {
 
 function addRunData(date, distance, duration) {
 
+    if(distance+1>maxDistScale){
+        maxDistScale=Math.floor(distance+2);
+        updateBarHeightsScale();
+        updateMaxScaleTexts();
+    }
     // Calculate height of the bar as a percentage of the parent's height
-    const barHeight = (distance / 6) * 100; // Adjust as needed for scaling
+    const barHeight = (distance / maxDistScale) * 100; // Adjust as needed for scaling
     // Calculate left position of the bar as a percentage of the parent's width
 
     const barLeft = (date / daysInMonth) * 100;
 
     let bar;
+
 
     distancesDict[date] = distance;
     durationsDict[date] = duration;
@@ -238,11 +262,22 @@ function addRunData(date, distance, duration) {
         bar.style.height = `${barHeight}%`;
         bar.style.left = `${barLeft}%`;
         barChart.appendChild(bar);
-        highlightBarKey=date;
+        highlightBarKey = date;
     }
 
     updateCurrentDateDist();
-    updateRunsData();
+    updateRunsMetrics();
+}
+
+function updateBarHeightsScale(){
+    
+    for(key in distancesDict){
+        const dist=distancesDict[key];
+        const percentage=dist/maxDistScale;
+
+        barsDict[key].style.height=`${percentage*100}%`
+    }
+
 }
 
 
@@ -260,9 +295,11 @@ document.addEventListener('mousemove', function (e) {
         if (newLeft > rightEdge) newLeft = rightEdge;
 
         sliderHandle.style.left = newLeft + 'px';
-        moveSliderDateTexts(newLeft);
-        let t=newLeft/rightEdge;
-        currentDate=Math.floor(t*(daysInMonth-1))+1;
+        let halfWidth = parseFloat(sliderHandle.style.width) * 0.5;
+
+        moveSliderDateTexts(newLeft + halfWidth);
+        let t = newLeft / rightEdge;
+        currentDate = Math.floor(t * (daysInMonth - 1)) + 1;
         updateCurrentDateText();
         updateDateInput();
         updateCurrentDateDist();
@@ -287,10 +324,11 @@ document.addEventListener('touchmove', function (e) {
         if (newLeft > rightEdge) newLeft = rightEdge;
 
         sliderHandle.style.left = newLeft + 'px';
-        moveSliderDateTexts(newLeft);
+        let halfWidth = parseFloat(sliderHandle.style.width) * 0.5;
 
-        let t=newLeft/rightEdge;
-        currentDate=Math.floor(t*(daysInMonth-1))+1;
+        moveSliderDateTexts(newLeft + halfWidth);
+        let t = newLeft / rightEdge;
+        currentDate = Math.floor(t * (daysInMonth - 1)) + 1;
         updateCurrentDateText();
         updateDateInput();
         updateCurrentDateDist();
@@ -304,68 +342,107 @@ document.addEventListener('touchend', function () {
 
 
 function moveSliderDateTexts(handleLeft) {
-    sliderDateTexts.forEach(text => {
-        const textLeft = parseFloat(text.getAttribute('data-left'));
-        const textHalfWidth = text.getBoundingClientRect().width / 2;
-        const distance = Math.abs(textLeft + textHalfWidth - handleLeft);
-        const maxDistance = 60; // Maximum distance to affect the text
-        const maxMoveUp = 15; // Maximum move up value in px
+    const parent = document.querySelector('.slider-date-text').parentElement;
+    const containerWidth = parent.style.width;
+    const maxDistance = 60; // Maximum distance to affect the text
+    const maxMoveUp = 15; // Maximum move up value in px
+
+    let baseLeft = 0;
+
+    for (let i = 0; i < sliderDateTexts.length; i++) {
+        const textRect = sliderDateTexts[i].getBoundingClientRect();
+        const width = textRect.width;
+
+        const textHalfWidth = width / 2;
+
+        const distance = Math.abs(baseLeft + textHalfWidth - handleLeft);
 
         if (distance < maxDistance) {
             const moveUp = maxMoveUp * (1 - distance / maxDistance);
-            text.style.top = `${- moveUp}px`; // Original top is 12px
+            sliderDateTexts[i].style.top = `${- moveUp}px`; // Original top is 12px
         } else {
-            text.style.top = '0px'; // Reset to original position
-
-            
+            sliderDateTexts[i].style.top = '0px'; // Reset to original position
         }
 
-        //console.log(`handle left: ${handleLeft}, distance: ${distance}, text top: ${text.style.top}`)
+        baseLeft += width;
 
-       
-    });
-}
-
-function updateCurrentDateText(){
-    currentDateText.textContent=`${currentMonth}月${currentDate}日`;
-    const percentage=(currentDate / daysInMonth) * 100;
-    currentDateLine.style.left=`calc(${percentage}% + 2px`;
-
-
-    if(highlightBarKey in barsDict && highlightBarKey != currentDate){
-        const bar=barsDict[highlightBarKey];
-        bar.className='bar';
-        console.log(`Class name set to 'bar' for key: ${highlightBarKey}`)
+        //console.log(`text ${i} left: ${baseLeft}, text ${i} width: ${width}, handle left: ${handleLeft}`)
     }
 
-   if(currentDate in barsDict){
-    const bar=barsDict[currentDate];
 
-    bar.className='bar highlight';
-    highlightBarKey=currentDate;
+    // sliderDateTexts.forEach(text => {
+    //     const textRect = text.getBoundingClientRect();
+    //     const textLeft = textRect.left - parentRect.left;
+    //     const textHalfWidth = textRect.width / 2;
+    //     const distance = Math.abs(textLeft + textHalfWidth - handleLeft);
+    //     const maxDistance = 60; // Maximum distance to affect the text
+    //     const maxMoveUp = 15; // Maximum move up value in px
 
-    console.log(`Class name set to 'bar highlight' for key: ${currentDate}`)
-   }
-    
+    //     //console.log(`handle left: ${handleLeft},text left: ${textLeft}`);
+
+    //     if (distance < maxDistance) {
+    //         const moveUp = maxMoveUp * (1 - distance / maxDistance);
+    //         text.style.top = `${- moveUp}px`; // Original top is 12px
+    //     } else {
+    //         text.style.top = '0px'; // Reset to original position
+
+
+    //     }
+
+    //     //console.log(`handle left: ${handleLeft}, distance: ${distance}, text top: ${text.style.top}`)
+
+
+    // });
+}
+
+
+function updateCurrentDateText() {
+    currentDateText.textContent = `${currentMonth}月${currentDate}日`;
+    const percentage = (currentDate / daysInMonth) * 100;
+    currentDateLine.style.left = `calc(${percentage}% + 2px`;
+
+
+    if (highlightBarKey in barsDict && highlightBarKey != currentDate) {
+        const bar = barsDict[highlightBarKey];
+        bar.className = 'bar';
+        console.log(`Class name set to 'bar' for key: ${highlightBarKey}`)
+        highlightBarKey=-1;
+        submitButton.textContent="添加数据"
+    }
+
+    if (currentDate in barsDict) {
+        const bar = barsDict[currentDate];
+
+        bar.className = 'bar highlight';
+        highlightBarKey = currentDate;
+
+        inputDistance.value=distancesDict[currentDate];
+        inputDuration.value=durationsDict[currentDate];
+
+        submitButton.textContent="修改数据"
+
+        console.log(`Class name set to 'bar highlight' for key: ${currentDate}`)
+    }
+
     //currentDateLine.style.left=`${percentage}%`;
 }
 
-function updateCurrentDateDist(){
-    if(currentDate in distancesDict){
+function updateCurrentDateDist() {
+    if (currentDate in distancesDict) {
 
-        let number=distancesDict[currentDate];
+        let number = distancesDict[currentDate];
         number = number.toFixed(2);
-        currentDateDistText.textContent=number;
-    }else{
-        currentDateDistText.textContent="--";
+        currentDateDistText.textContent = number;
+    } else {
+        currentDateDistText.textContent = "--";
     }
 }
 
-function updateDateInput(){
-    inputDate.value=currentDate;
+function updateDateInput() {
+    inputDate.value = currentDate;
 }
 
-function updateDateSlider(){
+function updateDateSlider() {
     const rightEdge = sliderContainer.offsetWidth - sliderHandle.offsetWidth;
 
     let t = (currentDate - 1) / (daysInMonth - 1);
@@ -373,31 +450,33 @@ function updateDateSlider(){
     let newLeft = rightEdge * t;
 
     sliderHandle.style.left = newLeft + 'px';
-    moveSliderDateTexts(newLeft);
+    let halfWidth = parseFloat(sliderHandle.style.width) * 0.5;
+
+    moveSliderDateTexts(newLeft + halfWidth);
 }
 
 
-function updateRunsData(){
+function updateRunsMetrics() {
 
     let sumDist = 0;
-    let runCount=0;
-    let sumMinutes=0;
+    let runCount = 0;
+    let sumMinutes = 0;
     for (let key in distancesDict) {
         sumDist += distancesDict[key];
-        runCount+=1;
+        runCount += 1;
 
-        if(key in durationsDict){
-            sumMinutes+=durationsDict[key];
+        if (key in durationsDict) {
+            sumMinutes += durationsDict[key];
         }
     }
 
-    totalDistText.textContent=sumDist.toFixed(2);
+    totalDistText.textContent = sumDist.toFixed(2);
     console.log(`sum minutes: ${sumMinutes}`);
-    totalMinutesText.textContent=sumMinutes.toFixed(2);
-    runCountText.textContent=runCount;
+    totalMinutesText.textContent = sumMinutes.toFixed(2);
+    runCountText.textContent = runCount;
 
-    const bodyHeight=parseFloat(document.getElementById('body-height').value);
-    const bodyWeight=parseFloat(document.getElementById('body-weights').value);;
+    const bodyHeight = parseFloat(document.getElementById('body-height').value);
+    const bodyWeight = parseFloat(document.getElementById('body-weights').value);;
 
 
     const runStrideLength = 1.092; // 跑步步长（米）
@@ -438,10 +517,24 @@ function updateRunsData(){
     const paceMinutes = Math.floor(averagePace);
     const paceSeconds = Math.round((averagePace - paceMinutes) * 60);
 
-    avgPaceText.textContent=`${paceMinutes}'${paceSeconds}''`;
-    totalStepsText.textContent=Math.round(totalSteps).toLocaleString();
-    totalCalsText.textContent=Math.round(totalCalories).toLocaleString()
+    avgPaceText.textContent = `${paceMinutes}'${paceSeconds}''`;
+    totalStepsText.textContent = Math.round(totalSteps).toLocaleString();
+    totalCalsText.textContent = Math.round(totalCalories).toLocaleString()
+}
 
 
+function updateMaxScaleTexts(){
+
+    const count=scalesTexts.length;
+
+    let increment=maxDistScale/(count-1);
+
+    for(let i =0;i<scalesTexts.length;i++){
+
+        const scale=Math.round(i*increment);
+
+        scalesTexts[i].textContent=scale;
+    }
+    
 }
 
